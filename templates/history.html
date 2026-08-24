@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verification History - FactVerify AI</title>
+    <!-- Google Fonts: Inter & Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <header class="app-header">
+        <div class="nav-container">
+            <div class="brand-section">
+                <a href="/" class="brand-logo">
+                    <span class="logo-icon">⚡</span>
+                    <span class="logo-text">FactVerify <span class="logo-accent">AI</span></span>
+                </a>
+                <span class="brand-badge">Real-Time Fact Verification</span>
+            </div>
+
+            <nav class="nav-links" id="navLinks">
+                <a href="/" class="nav-item">Home</a>
+                <a href="/#verifySection" class="nav-item">Verify</a>
+                <a href="/history" class="nav-item active">History</a>
+                <a href="/about" class="nav-item">About</a>
+            </nav>
+
+            <div class="nav-status">
+                <span class="status-indicator"></span>
+                <span class="status-label">Live APIs Active</span>
+                <button class="mobile-toggle" id="mobileToggle" aria-label="Toggle navigation menu">☰</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container container-large">
+            <!-- Header & Action Bar -->
+            <div class="history-page-header">
+                <div>
+                    <h1 class="page-title">Verification History</h1>
+                    <p class="page-lead">Audit log of previous fact verification requests, retrieved evidence, and source links.</p>
+                </div>
+                {% if records %}
+                <form action="/history/clear" method="POST" onsubmit="return confirm('Are you sure you want to clear all verification history records?');">
+                    <button type="submit" class="btn btn-danger-outline">🗑️ Clear History</button>
+                </form>
+                {% endif %}
+            </div>
+
+            <!-- Dashboard Live Statistics Bar -->
+            {% if stats %}
+            <div class="stats-overview">
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.total }}</div>
+                    <div class="stat-label">Total Queries</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value text-success">{{ stats.verified }}</div>
+                    <div class="stat-label">Verified ✅</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value text-danger">{{ stats.not_verified }}</div>
+                    <div class="stat-label">Not Verified ❌</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value text-accent">{{ stats.weather }}</div>
+                    <div class="stat-label">Weather 🌤️</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value text-accent">{{ stats.sports }}</div>
+                    <div class="stat-label">Sports ⚽</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value text-accent">{{ stats.movies }}</div>
+                    <div class="stat-label">Movies 🎬</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value text-accent">{{ stats.science }}</div>
+                    <div class="stat-label">Science 🔬</div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Interactive Search & Filter Controls -->
+            {% if records %}
+            <div class="controls-card">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="historySearch" placeholder="Search claims, keywords, locations, or evidence..." class="search-input">
+                </div>
+
+                <div class="filter-group">
+                    <span class="filter-label">Filter Category:</span>
+                    <button type="button" class="filter-chip active" data-filter-type="category" data-filter-val="all">All</button>
+                    <button type="button" class="filter-chip" data-filter-type="category" data-filter-val="weather">Weather</button>
+                    <button type="button" class="filter-chip" data-filter-type="category" data-filter-val="sports">Sports</button>
+                    <button type="button" class="filter-chip" data-filter-type="category" data-filter-val="movies">Movies</button>
+                    <button type="button" class="filter-chip" data-filter-type="category" data-filter-val="science">Science</button>
+                </div>
+            </div>
+
+            <!-- History Records List -->
+            <div class="history-grid" id="historyGrid">
+                {% for rec in records %}
+                    <div class="card history-card-item" 
+                         data-domain="{{ rec.detected_domain | lower }}"
+                         data-result="{{ rec.result | lower }}"
+                         data-text="{{ rec.user_claim | lower }} {{ rec.explanation | lower }} {{ rec.evidence | lower }}">
+                        
+                        <div class="item-header">
+                            <div class="item-claim">"{{ rec.user_claim }}"</div>
+                            {% set res = rec.result | upper %}
+                            {% if 'VERIFIED' in res and 'NOT' not in res and 'PARTIALLY' not in res %}
+                                <span class="badge badge-verified">VERIFIED ✅</span>
+                            {% elif 'FALSE' in res or 'NOT' in res %}
+                                <span class="badge badge-false">NOT VERIFIED ❌</span>
+                            {% else %}
+                                <span class="badge badge-uncertain">UNCERTAIN ⚠️</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="item-meta-bar">
+                            <span class="badge domain-badge domain-{{ rec.detected_domain | lower }}">{{ rec.detected_domain }}</span>
+                            {% if rec.extracted_location %}
+                                <span class="meta-location">📍 {{ rec.extracted_location }}</span>
+                            {% endif %}
+                            <span class="meta-time">🕒 {{ rec.verification_time }}</span>
+                        </div>
+
+                        <div class="item-explanation">
+                            {{ rec.explanation }}
+                        </div>
+
+                        <div class="item-footer">
+                            <span class="item-source">Source: <strong>{{ rec.source }}</strong></span>
+                            {% if rec.source_url %}
+                                <a href="{{ rec.source_url }}" target="_blank" rel="noopener noreferrer" class="link-external">
+                                    Official Source &rarr;
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <!-- Professional Empty State -->
+            <div class="card empty-state-card">
+                <div class="empty-icon">📜</div>
+                <h3>No verification history yet</h3>
+                <p>Verify your first claim on the home page to populate your live verification log.</p>
+                <a href="/#verifySection" class="btn btn-primary btn-lg">Verify Your First Claim</a>
+            </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+        <div class="container footer-container">
+            <div class="footer-brand">
+                <span class="logo-icon">⚡</span> <strong>FactVerify AI</strong> &mdash; Real-Time Data Verification System
+            </div>
+            <div class="footer-meta">
+                Showing {{ records | length }} History Log Entries
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

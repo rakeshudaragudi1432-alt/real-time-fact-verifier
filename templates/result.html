@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verification Result - FactVerify AI</title>
+    <!-- Google Fonts: Inter & Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <header class="app-header">
+        <div class="nav-container">
+            <div class="brand-section">
+                <a href="/" class="brand-logo">
+                    <span class="logo-icon">⚡</span>
+                    <span class="logo-text">FactVerify <span class="logo-accent">AI</span></span>
+                </a>
+                <span class="brand-badge">Real-Time Fact Verification</span>
+            </div>
+
+            <nav class="nav-links" id="navLinks">
+                <a href="/" class="nav-item">Home</a>
+                <a href="/#verifySection" class="nav-item">Verify</a>
+                <a href="/history" class="nav-item">History</a>
+                <a href="/about" class="nav-item">About</a>
+            </nav>
+
+            <div class="nav-status">
+                <span class="status-indicator"></span>
+                <span class="status-label">Live APIs Active</span>
+                <button class="mobile-toggle" id="mobileToggle" aria-label="Toggle navigation menu">☰</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container container-medium">
+            <section class="card result-card">
+                <!-- Status Banner Header -->
+                {% set res = verification.result | upper %}
+                {% if 'VERIFIED' in res and 'NOT' not in res and 'PARTIALLY' not in res %}
+                    <div class="result-banner banner-verified">
+                        <div class="banner-icon">✓</div>
+                        <div class="banner-title">VERIFIED</div>
+                        <div class="banner-sub">Claim is supported by available real-world data feeds.</div>
+                    </div>
+                {% elif 'FALSE' in res or 'NOT' in res %}
+                    <div class="result-banner banner-false">
+                        <div class="banner-icon">✕</div>
+                        <div class="banner-title">NOT VERIFIED</div>
+                        <div class="banner-sub">The available evidence does not support this claim.</div>
+                    </div>
+                {% else %}
+                    <div class="result-banner banner-uncertain">
+                        <div class="banner-icon">!</div>
+                        <div class="banner-title">UNCERTAIN</div>
+                        <div class="banner-sub">There is not enough reliable evidence to confidently verify this claim.</div>
+                    </div>
+                {% endif %}
+
+                <!-- Claim Metadata Summary -->
+                <div class="claim-details-box">
+                    <div class="meta-row">
+                        <span class="meta-label">Submitted Claim:</span>
+                        <span class="meta-claim">"{{ verification.claim }}"</span>
+                    </div>
+
+                    <div class="meta-grid">
+                        <div class="meta-item">
+                            <span class="meta-label">Domain:</span>
+                            <span class="badge domain-badge domain-{{ verification.detected_domain | lower }}">{{ verification.detected_domain }}</span>
+                        </div>
+                        {% if verification.evidence_indicator %}
+                        <div class="meta-item">
+                            <span class="meta-label">Evidence Quality:</span>
+                            <span class="badge brand-badge">{{ verification.evidence_indicator }}</span>
+                        </div>
+                        {% endif %}
+                        {% if verification.detected_location %}
+                        <div class="meta-item">
+                            <span class="meta-label">Location:</span>
+                            <span class="meta-value">📍 {{ verification.detected_location }}</span>
+                        </div>
+                        {% endif %}
+                        <div class="meta-item">
+                            <span class="meta-label">Verified At:</span>
+                            <span class="meta-value">🕒 {{ verification.verification_time }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-divider"></div>
+
+                <!-- Explanation & Evidence Comparison -->
+                <div class="result-section">
+                    <h3 class="section-title">💡 Explanation & Analysis</h3>
+                    <p class="explanation-box">{{ verification.explanation }}</p>
+                </div>
+
+                <!-- Structured Evidence Section -->
+                <div class="result-section">
+                    <h3 class="section-title">📡 Retrieved Real-World Evidence</h3>
+                    
+                    {% if verification.api_data and verification.detected_domain == 'WEATHER' %}
+                        <div class="evidence-grid">
+                            <div class="ev-card">
+                                <span class="ev-label">Temperature</span>
+                                <span class="ev-value">{{ verification.api_data.temperature_c }}°C ({{ verification.api_data.temperature_f }}°F)</span>
+                            </div>
+                            <div class="ev-card">
+                                <span class="ev-label">Condition</span>
+                                <span class="ev-value">{{ verification.api_data.condition }}</span>
+                            </div>
+                            <div class="ev-card">
+                                <span class="ev-label">Location</span>
+                                <span class="ev-value">{{ verification.api_data.location }}, {{ verification.api_data.country }}</span>
+                            </div>
+                            <div class="ev-card">
+                                <span class="ev-label">Humidity</span>
+                                <span class="ev-value">{{ verification.api_data.humidity }}%</span>
+                            </div>
+                            <div class="ev-card">
+                                <span class="ev-label">Wind Speed</span>
+                                <span class="ev-value">{{ verification.api_data.wind_speed_kmh }} km/h</span>
+                            </div>
+                            <div class="ev-card">
+                                <span class="ev-label">Rain / Precip</span>
+                                <span class="ev-value">{{ verification.api_data.precipitation_mm }} mm</span>
+                            </div>
+                        </div>
+                    {% elif verification.api_data and verification.detected_domain == 'SPORTS' and verification.api_data.matched_event %}
+                        {% set ev = verification.api_data.matched_event %}
+                        <div class="evidence-grid">
+                            <div class="ev-card">
+                                <span class="ev-label">Event Match</span>
+                                <span class="ev-value">{{ ev.event_title }}</span>
+                            </div>
+                            <div class="ev-card">
+                                <span class="ev-label">Competition</span>
+                                <span class="ev-value">{{ ev.league or 'Official Match' }}</span>
+                            </div>
+                            <div class="ev-card">
+                                <span class="ev-label">Event Date</span>
+                                <span class="ev-value">{{ ev.date }}</span>
+                            </div>
+                            <div class="ev-card">
+                                <span class="ev-label">Score Result</span>
+                                <span class="ev-value">{{ ev.home_team }} {{ ev.home_score if ev.home_score is not none else 'N/A' }} - {{ ev.away_score if ev.away_score is not none else 'N/A' }} {{ ev.away_team }}</span>
+                            </div>
+                            <div class="ev-card">
+                                <span class="ev-label">Official Winner</span>
+                                <span class="ev-value">{{ ev.winner or 'Draw / Pending' }}</span>
+                            </div>
+                        </div>
+                    {% elif verification.api_data and verification.detected_domain == 'MOVIES' %}
+                        {% set m = verification.api_data %}
+                        <div class="evidence-grid">
+                            <div class="ev-card">
+                                <span class="ev-label">Movie Title</span>
+                                <span class="ev-value">{{ m.title }}</span>
+                            </div>
+                            <div class="ev-card">
+                                <span class="ev-label">Release Year</span>
+                                <span class="ev-value">{{ m.year }} ({{ m.release_date }})</span>
+                            </div>
+                            <div class="ev-card">
+                                <span class="ev-label">Director</span>
+                                <span class="ev-value">{{ m.director }}</span>
+                            </div>
+                            <div class="ev-card">
+                                <span class="ev-label">Main Cast</span>
+                                <span class="ev-value">{{ m.actors_raw }}</span>
+                            </div>
+                            <div class="ev-card">
+                                <span class="ev-label">IMDb Rating</span>
+                                <span class="ev-value">⭐ {{ m.rating_raw }}/10</span>
+                            </div>
+                            <div class="ev-card">
+                                <span class="ev-label">Genre</span>
+                                <span class="ev-value">{{ m.genre_raw }}</span>
+                            </div>
+                        </div>
+                    {% else %}
+                        <!-- Raw Evidence Summary Box -->
+                        <div class="evidence-summary-box">
+                            <code>{{ verification.evidence }}</code>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="section-divider"></div>
+
+                <!-- Source Attribution Section -->
+                <div class="source-section">
+                    <div class="source-info">
+                        <span class="source-label">Authority Source:</span>
+                        <span class="source-name">{{ verification.source }}</span>
+                    </div>
+                    {% if verification.source_url %}
+                        <a href="{{ verification.source_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline">
+                            View Official Source &rarr;
+                        </a>
+                    {% endif %}
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="actions-group">
+                    <a href="/#verifySection" class="btn btn-primary btn-lg">Verify Another Claim</a>
+                    <a href="/history" class="btn btn-secondary btn-lg">View History Log</a>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+        <div class="container footer-container">
+            <div class="footer-brand">
+                <span class="logo-icon">⚡</span> <strong>FactVerify AI</strong> &mdash; Real-Time Data Verification System
+            </div>
+            <div class="footer-meta">
+                Source: {{ verification.source }} &bull; Timestamp: {{ verification.verification_time }}
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
